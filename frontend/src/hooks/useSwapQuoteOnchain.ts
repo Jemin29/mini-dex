@@ -22,12 +22,14 @@ export function useSwapQuoteOnchain() {
     return parseUnits(debouncedAmount, fallbackIn.decimals);
   }, [debouncedAmount, fallbackIn.decimals]);
 
+  const sameToken = fallbackIn.address.toLowerCase() === fallbackOut.address.toLowerCase();
+
   const query = useReadContract({
     ...dexContracts.router,
     functionName: "getAmountOut",
     args: [fallbackIn.address, fallbackOut.address, parsedAmount],
     query: {
-      enabled: Boolean(env.routerAddress && parsedAmount > 0n),
+      enabled: Boolean(env.routerAddress && parsedAmount > 0n && !sameToken),
       retry: 2,
       retryDelay: 1500,
       staleTime: 10_000,

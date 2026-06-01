@@ -2,13 +2,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSwapQuote } from "@/hooks/useSwapQuote";
 import { useSwapQuoteOnchain } from "@/hooks/useSwapQuoteOnchain";
+import { useSwapMetrics } from "@/hooks/useSwapMetrics";
 import { useSwapStore } from "@/state/swapStore";
 import { formatNumber, formatPct } from "@/lib/format";
 
 export default function SwapPreview() {
-  const { amountOut, fee, priceImpact } = useSwapQuote();
+  const { amountOut, fee, priceImpact } = useSwapMetrics();
   const onchainQuote = useSwapQuoteOnchain();
   const { amountIn } = useSwapStore();
   const hasAmount = Number(amountIn) > 0;

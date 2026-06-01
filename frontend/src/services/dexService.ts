@@ -38,3 +38,65 @@ export async function swapExactTokens(params: SwapParams, signer: Signer) {
     params.deadline
   );
 }
+
+export type AddLiquidityParams = {
+  router: string;
+  tokenA: string;
+  tokenB: string;
+  amountADesired: string;
+  amountBDesired: string;
+  amountAMin: string;
+  amountBMin: string;
+  to: string;
+  deadline: number;
+  decimalsA: number;
+  decimalsB: number;
+};
+
+export async function addLiquidity(params: AddLiquidityParams, signer: Signer) {
+  const router = new Contract(params.router, routerAbi, signer);
+  const amountADesired = parseUnits(params.amountADesired, params.decimalsA);
+  const amountBDesired = parseUnits(params.amountBDesired, params.decimalsB);
+  const amountAMin = parseUnits(params.amountAMin, params.decimalsA);
+  const amountBMin = parseUnits(params.amountBMin, params.decimalsB);
+  return router.addLiquidity(
+    params.tokenA,
+    params.tokenB,
+    amountADesired,
+    amountBDesired,
+    amountAMin,
+    amountBMin,
+    params.to,
+    params.deadline
+  );
+}
+
+export type RemoveLiquidityParams = {
+  router: string;
+  tokenA: string;
+  tokenB: string;
+  liquidity: string;
+  amountAMin: string;
+  amountBMin: string;
+  to: string;
+  deadline: number;
+  decimalsA: number;
+  decimalsB: number;
+  lpDecimals: number;
+};
+
+export async function removeLiquidity(params: RemoveLiquidityParams, signer: Signer) {
+  const router = new Contract(params.router, routerAbi, signer);
+  const liquidity = parseUnits(params.liquidity, params.lpDecimals);
+  const amountAMin = parseUnits(params.amountAMin, params.decimalsA);
+  const amountBMin = parseUnits(params.amountBMin, params.decimalsB);
+  return router.removeLiquidity(
+    params.tokenA,
+    params.tokenB,
+    liquidity,
+    amountAMin,
+    amountBMin,
+    params.to,
+    params.deadline
+  );
+}

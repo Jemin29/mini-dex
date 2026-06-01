@@ -3,6 +3,7 @@ import { Sora, Space_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import AppShell from "@/components/layout/AppShell";
+import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
 
 const sora = Sora({ subsets: ["latin"], variable: "--font-sora" });
 const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-space-mono" });
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>
+        <AnalyticsProvider />
       </body>
     </html>
   );

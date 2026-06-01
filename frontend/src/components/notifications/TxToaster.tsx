@@ -19,7 +19,7 @@ export default function TxToaster() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-semibold text-foreground">{toast.title}</p>
-              <p className="text-xs text-muted">{toast.timestamp}</p>
+              <p className="text-xs text-muted">{toast.timestamp} · {toast.status}</p>
             </div>
             <button
               onClick={() => dismiss(toast.id)}

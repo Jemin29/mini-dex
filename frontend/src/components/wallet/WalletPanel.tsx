@@ -9,7 +9,17 @@ import UnsupportedNetworkBanner from "@/components/wallet/UnsupportedNetworkBann
 import { formatNumber } from "@/lib/format";
 
 export default function WalletPanel() {
-  const { address, isConnected, isConnecting, isReconnecting, chainId, chains, isUnsupported, balanceQuery } = useWallet();
+  const {
+    address,
+    connectorName,
+    isConnected,
+    isConnecting,
+    isReconnecting,
+    chainId,
+    chains,
+    isUnsupported,
+    balanceQuery
+  } = useWallet();
   const { disconnect, switchChainAsync, isSwitching } = useWalletActions();
 
   const shortAddress = useMemo(() => {
@@ -49,6 +59,10 @@ export default function WalletPanel() {
         <div className="flex items-center justify-between">
           <span className="text-muted">Network</span>
           <span>{chains.find((c) => c.id === chainId)?.name || "Unknown"}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted">Connector</span>
+          <span>{connectorName || "-"}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted">Balance</span>

@@ -7,11 +7,13 @@ import { useSwapStore } from "@/state/swapStore";
 import { Token } from "@/types/tokens";
 import { cn } from "@/lib/utils";
 import TokenLogo from "@/components/common/TokenLogo";
+import { useTokenImport } from "@/hooks/useTokenImport";
 
 export default function TokenSelect({ variant }: { variant: "in" | "out" }) {
   const tokens = useTokenList();
   const { tokenIn, tokenOut, setTokenIn, setTokenOut } = useSwapStore();
   const selected = variant === "in" ? tokenIn : tokenOut;
+  const { importToken, isImporting } = useTokenImport();
 
   const handleSelect = (token: Token) => {
     if (variant === "in") {
@@ -53,7 +55,20 @@ export default function TokenSelect({ variant }: { variant: "in" | "out" }) {
                   <p className="text-xs text-muted">{token.name}</p>
                 </div>
               </div>
-              <span className="text-xs text-muted">{token.decimals} decimals</span>
+              <div className="flex items-center gap-3 text-xs text-muted">
+                <button
+                  type="button"
+                  className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-foreground hover:border-accent/50"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    importToken(token);
+                  }}
+                  disabled={isImporting}
+                >
+                  Import
+                </button>
+                <span>{token.decimals} decimals</span>
+              </div>
             </button>
           ))}
         </div>

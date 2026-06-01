@@ -5,6 +5,7 @@ import { NAV_LINKS } from "@/lib/constants";
 import { useMounted } from "@/hooks/useMounted";
 import TxToaster from "@/components/notifications/TxToaster";
 import WalletMenu from "@/components/wallet/WalletMenu";
+import AuthMenu from "@/components/auth/AuthMenu";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const mounted = useMounted();
@@ -27,6 +28,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
           <div className="flex items-center gap-3">
+            {mounted && <AuthMenu />}
             {mounted && <WalletMenu />}
           </div>
         </div>

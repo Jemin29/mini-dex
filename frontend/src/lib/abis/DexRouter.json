@@ -12,6 +12,16 @@
   },
   {
     "inputs": [
+      { "internalType": "address", "name": "tokenA", "type": "address" },
+      { "internalType": "address", "name": "tokenB", "type": "address" }
+    ],
+    "name": "getPool",
+    "outputs": [{ "internalType": "address", "name": "pool", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "address", "name": "tokenIn", "type": "address" },
       { "internalType": "address", "name": "tokenOut", "type": "address" },
       { "internalType": "uint256", "name": "amountIn", "type": "uint256" },

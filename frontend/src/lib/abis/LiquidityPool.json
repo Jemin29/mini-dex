@@ -32,6 +32,13 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "lpToken",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "anonymous": false,
     "inputs": [
       { "indexed": true, "internalType": "address", "name": "sender", "type": "address" },

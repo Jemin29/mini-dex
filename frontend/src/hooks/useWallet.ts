@@ -3,7 +3,7 @@
 import { useAccount, useBalance, useChainId, useChains } from "wagmi";
 
 export function useWallet() {
-  const { address, isConnected, isConnecting, isReconnecting, status } = useAccount();
+  const { address, connector, isConnected, isConnecting, isReconnecting, status } = useAccount();
   const chainId = useChainId();
   const chains = useChains();
   const isUnsupported = Boolean(isConnected && chains.length && !chains.find((c) => c.id === chainId));
@@ -11,6 +11,7 @@ export function useWallet() {
 
   return {
     address,
+    connectorName: connector?.name || "",
     isConnected,
     isConnecting,
     isReconnecting,
