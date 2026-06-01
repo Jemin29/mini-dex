@@ -14,11 +14,18 @@ export type DexFixture = {
   tokenB: Contract;
 };
 
-export async function deployDexFixture(): Promise<DexFixture> {
+type FixtureOptions = {
+  feeRecipient?: string;
+  protocolFeeBps?: number;
+};
+
+export async function deployDexFixture(options: FixtureOptions = {}): Promise<DexFixture> {
   const [owner, trader, lp] = await ethers.getSigners();
+  const feeRecipient = options.feeRecipient || owner.address;
+  const protocolFeeBps = options.protocolFeeBps ?? 0;
 
   const Router = await ethers.getContractFactory("DexRouter");
-  const router = await Router.deploy(owner.address);
+  const router = await Router.deploy(owner.address, feeRecipient, protocolFeeBps);
   await router.waitForDeployment();
 
   const Mock = await ethers.getContractFactory("ERC20Mock");

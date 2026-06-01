@@ -24,6 +24,7 @@ contract LiquidityPool is ReentrancyGuard {
     error InvalidFee();
 
     uint256 public constant MINIMUM_LIQUIDITY = 1_000;
+    uint256 public constant VERSION = 1;
 
     address public immutable token0;
     address public immutable token1;

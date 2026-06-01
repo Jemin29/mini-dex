@@ -4,7 +4,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   const Router = await ethers.getContractFactory("DexRouter");
-  const router = await Router.deploy(deployer.address);
+  const router = await Router.deploy(deployer.address, deployer.address, 0);
   await router.waitForDeployment();
 
   const Mock = await ethers.getContractFactory("ERC20Mock");

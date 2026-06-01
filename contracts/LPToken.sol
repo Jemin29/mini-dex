@@ -8,6 +8,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract LPToken is ERC20 {
     error NotPool();
 
+    uint256 public constant VERSION = 1;
     address public immutable pool;
 
     constructor(string memory name_, string memory symbol_, address pool_) ERC20(name_, symbol_) {

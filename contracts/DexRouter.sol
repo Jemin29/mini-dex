@@ -3,14 +3,16 @@ pragma solidity ^0.8.24;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import { LiquidityPool } from "./LiquidityPool.sol";
 import { SwapLogic } from "./SwapLogic.sol";
 
 /// @title DexRouter
 /// @notice Router for swaps and liquidity management
-contract DexRouter is Ownable {
+/// @dev Protocol fee is charged on input amount and sent to feeRecipient
+contract DexRouter is Ownable2Step, Pausable {
     using SafeERC20 for IERC20;
 
     error ZeroAddress();
@@ -20,6 +22,8 @@ contract DexRouter is Ownable {
     error DeadlineExpired();
     error InsufficientAmount();
     error InvalidFee();
+    error ZeroAmount();
+    error InvalidRecipient();
 
     event PoolCreated(address indexed token0, address indexed token1, address pool, uint24 feeBps);
     event LiquidityAdded(
@@ -45,13 +49,54 @@ contract DexRouter is Ownable {
         uint256 amountOut,
         address to
     );
+    event ProtocolFeeUpdated(uint24 feeBps);
+    event FeeRecipientUpdated(address indexed recipient);
+
+    uint24 public constant MAX_PROTOCOL_FEE_BPS = 1_000;
+    uint256 public constant VERSION = 1;
 
     mapping(bytes32 => address) private pools;
+    address public feeRecipient;
+    uint24 public protocolFeeBps;
 
-    constructor(address owner_) Ownable(owner_) {}
+    constructor(address owner_, address feeRecipient_, uint24 protocolFeeBps_) Ownable(owner_) {
+        if (feeRecipient_ == address(0)) revert InvalidRecipient();
+        if (protocolFeeBps_ > MAX_PROTOCOL_FEE_BPS) revert InvalidFee();
+        feeRecipient = feeRecipient_;
+        protocolFeeBps = protocolFeeBps_;
+    }
+
+    /// @notice Updates protocol fee recipient
+    function setFeeRecipient(address recipient) external onlyOwner {
+        if (recipient == address(0)) revert InvalidRecipient();
+        feeRecipient = recipient;
+        emit FeeRecipientUpdated(recipient);
+    }
+
+    /// @notice Updates protocol fee in basis points
+    function setProtocolFeeBps(uint24 feeBps) external onlyOwner {
+        if (feeBps > MAX_PROTOCOL_FEE_BPS) revert InvalidFee();
+        protocolFeeBps = feeBps;
+        emit ProtocolFeeUpdated(feeBps);
+    }
+
+    /// @notice Emergency pause of router actions
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Unpause router actions
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 
     /// @notice Creates a new liquidity pool for a token pair
-    function createPool(address tokenA, address tokenB, uint24 feeBps) external onlyOwner returns (address pool) {
+    function createPool(address tokenA, address tokenB, uint24 feeBps)
+        external
+        onlyOwner
+        whenNotPaused
+        returns (address pool)
+    {
         if (tokenA == address(0) || tokenB == address(0)) revert ZeroAddress();
         if (tokenA == tokenB) revert InvalidToken();
         if (feeBps >= 10_000) revert InvalidFee();
@@ -83,9 +128,10 @@ contract DexRouter is Ownable {
         uint256 amountBMin,
         address to,
         uint256 deadline
-    ) external returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
+    ) external whenNotPaused returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
         if (block.timestamp > deadline) revert DeadlineExpired();
         if (to == address(0)) revert ZeroAddress();
+        if (amountADesired == 0 || amountBDesired == 0) revert ZeroAmount();
 
         address pool = getPool(tokenA, tokenB);
         if (pool == address(0)) revert PoolNotFound();
@@ -108,9 +154,10 @@ contract DexRouter is Ownable {
         uint256 amountBMin,
         address to,
         uint256 deadline
-    ) external returns (uint256 amountA, uint256 amountB) {
+    ) external whenNotPaused returns (uint256 amountA, uint256 amountB) {
         if (block.timestamp > deadline) revert DeadlineExpired();
         if (to == address(0)) revert ZeroAddress();
+        if (liquidity == 0) revert ZeroAmount();
 
         address pool = getPool(tokenA, tokenB);
         if (pool == address(0)) revert PoolNotFound();
@@ -140,15 +187,21 @@ contract DexRouter is Ownable {
         uint256 amountOutMin,
         address to,
         uint256 deadline
-    ) external returns (uint256 amountOut) {
+    ) external whenNotPaused returns (uint256 amountOut) {
         if (block.timestamp > deadline) revert DeadlineExpired();
         if (to == address(0)) revert ZeroAddress();
         if (tokenIn == tokenOut) revert InvalidToken();
+        if (amountIn == 0) revert ZeroAmount();
 
         address pool = getPool(tokenIn, tokenOut);
         if (pool == address(0)) revert PoolNotFound();
 
-        IERC20(tokenIn).safeTransferFrom(msg.sender, pool, amountIn);
+        uint256 fee = (amountIn * protocolFeeBps) / 10_000;
+        uint256 netAmountIn = amountIn - fee;
+        if (fee > 0) {
+            IERC20(tokenIn).safeTransferFrom(msg.sender, feeRecipient, fee);
+        }
+        IERC20(tokenIn).safeTransferFrom(msg.sender, pool, netAmountIn);
         amountOut = LiquidityPool(pool).swap(tokenIn, to, amountOutMin);
 
         emit SwapExecuted(msg.sender, pool, tokenIn, tokenOut, amountIn, amountOut, to);
@@ -158,15 +211,19 @@ contract DexRouter is Ownable {
     function getAmountOut(address tokenIn, address tokenOut, uint256 amountIn) external view returns (uint256) {
         address pool = getPool(tokenIn, tokenOut);
         if (pool == address(0)) revert PoolNotFound();
+        if (amountIn == 0) revert ZeroAmount();
 
         (uint112 reserve0, uint112 reserve1, ) = LiquidityPool(pool).getReserves();
         (address token0, ) = _sortTokens(tokenIn, tokenOut);
         uint24 feeBps = LiquidityPool(pool).feeBps();
 
+        uint256 fee = (amountIn * protocolFeeBps) / 10_000;
+        uint256 netAmountIn = amountIn - fee;
+
         if (tokenIn == token0) {
-            return SwapLogic.getAmountOut(amountIn, reserve0, reserve1, feeBps);
+            return SwapLogic.getAmountOut(netAmountIn, reserve0, reserve1, feeBps);
         }
-        return SwapLogic.getAmountOut(amountIn, reserve1, reserve0, feeBps);
+        return SwapLogic.getAmountOut(netAmountIn, reserve1, reserve0, feeBps);
     }
 
     function _addLiquidity(

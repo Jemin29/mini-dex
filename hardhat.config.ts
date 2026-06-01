@@ -1,5 +1,6 @@
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";
+import "hardhat-coverage";
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 

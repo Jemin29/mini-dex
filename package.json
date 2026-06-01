@@ -6,10 +6,13 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
+    "coverage": "hardhat coverage",
     "deploy": "hardhat run scripts/deploy.ts --network sepolia",
+    "deploy:prod": "hardhat run scripts/deploy.production.ts --network sepolia",
     "deploy:local": "hardhat run scripts/deploy.ts --network hardhat",
     "deploy:scai": "hardhat run scripts/deploy.ts --network scaiTestnet",
-    "verify:scai": "hardhat verify --network scaiTestnet"
+    "verify:scai": "hardhat verify --network scaiTestnet",
+    "verify:sepolia": "hardhat verify --network sepolia"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
@@ -17,6 +20,7 @@
     "dotenv": "^16.4.5",
     "hardhat-gas-reporter": "^1.0.10",
     "hardhat": "^2.22.12",
+    "hardhat-coverage": "^0.8.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }
