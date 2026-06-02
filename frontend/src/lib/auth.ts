@@ -1,4 +1,4 @@
-import type { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions, RequestInternal, Provider } from "next-auth/providers";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import EmailProvider from "next-auth/providers/email";
@@ -10,7 +10,7 @@ type WalletUser = {
   name?: string;
 };
 
-function getCookieValue(cookieHeader: string, name: string): string | null {
+function getCookieValue(cookieHeader: string | undefined | null, name: string): string | null {
   if (!cookieHeader) return null;
   const cookies = cookieHeader.split(";").map((cookie) => cookie.trim());
   const match = cookies.find((cookie) => cookie.startsWith(`${name}=`));
@@ -18,8 +18,8 @@ function getCookieValue(cookieHeader: string, name: string): string | null {
   return decodeURIComponent(match.split("=")[1] || "");
 }
 
-function getExpectedDomain(req: Request): string {
-  const headerHost = req.headers.get("host") || "localhost:3000";
+function getExpectedDomain(req: Pick<RequestInternal, "headers">): string {
+  const headerHost = req.headers?.host || "localhost:3000";
   const baseUrl = process.env.NEXTAUTH_URL || `http://${headerHost}`;
   return new URL(baseUrl).host;
 }
@@ -37,7 +37,7 @@ const walletProvider = CredentialsProvider({
 
       const siwe = new SiweMessage(JSON.parse(credentials.message));
       const expectedDomain = getExpectedDomain(req);
-      const nonce = getCookieValue(req.headers.get("cookie") || "", "siwe-nonce");
+      const nonce = getCookieValue(req.headers?.cookie, "siwe-nonce");
 
       if (!nonce) return null;
 
@@ -63,7 +63,7 @@ const walletProvider = CredentialsProvider({
   }
 });
 
-const providers = [walletProvider];
+const providers: Provider[] = [walletProvider];
 
 if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   providers.push(

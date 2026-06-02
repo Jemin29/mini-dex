@@ -2,10 +2,11 @@
 
 import { useMemo } from "react";
 import { useWatchContractEvent, useAccount } from "wagmi";
-import { formatUnits } from "viem";
+import { formatUnits, type Log } from "viem";
 import { dexContracts } from "@/lib/contracts";
 import { useTokenList } from "@/hooks/useTokenList";
 import { useTxStore } from "@/state/txStore";
+import type { Token } from "@/types/tokens";
 import type { TransactionHistoryItem } from "@/types/tx";
 import { useLiquidityPoolData } from "@/hooks/useLiquidityPoolData";
 
@@ -16,6 +17,25 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+type SwapEventArgs = {
+  sender: string;
+  tokenIn: string;
+  tokenOut: string;
+  amountIn: bigint;
+  amountOut: bigint;
+  to: string;
+};
+
+type MintBurnEventArgs = {
+  sender: string;
+  to: string;
+  amount0: bigint;
+  amount1: bigint;
+  liquidity: bigint;
+};
+
+type EventLog<T> = Log & { args: T };
+
 export function useHistoryEvents(onlyMyWallet: boolean) {
   const { address } = useAccount();
   const { addHistory } = useTxStore();
@@ -23,8 +43,8 @@ export function useHistoryEvents(onlyMyWallet: boolean) {
   const tokens = useTokenList();
 
   const tokenMap = useMemo(() => {
-    const entries = tokens.map((token) => [token.address.toLowerCase(), token]);
-    return new Map(entries);
+    const entries: [string, Token][] = tokens.map((token) => [token.address.toLowerCase(), token]);
+    return new Map<string, Token>(entries);
   }, [tokens]);
 
   const resolveSymbol = (addr?: string) => {
@@ -43,15 +63,10 @@ export function useHistoryEvents(onlyMyWallet: boolean) {
     ...dexContracts.pool,
     eventName: "Swap",
     onLogs: (logs) => {
-      logs.forEach((log) => {
-        const args = log.args as {
-          sender: string;
-          tokenIn: string;
-          tokenOut: string;
-          amountIn: bigint;
-          amountOut: bigint;
-          to: string;
-        };
+      logs.forEach((rawLog) => {
+        const log = rawLog as unknown as EventLog<SwapEventArgs>;
+        const args = log.args;
+        if (!args) return;
         handleHistory({
           id: createId(),
           type: "Swap",
@@ -61,7 +76,7 @@ export function useHistoryEvents(onlyMyWallet: boolean) {
           amountOut: formatUnits(args.amountOut, tokenMap.get(args.tokenOut.toLowerCase())?.decimals || 18),
           status: "confirmed",
           timestamp: new Date().toLocaleTimeString(),
-          hash: log.transactionHash,
+          hash: log.transactionHash ?? undefined,
           wallet: args.to,
           source: "onchain",
           createdAt: Date.now()
@@ -74,14 +89,10 @@ export function useHistoryEvents(onlyMyWallet: boolean) {
     ...dexContracts.pool,
     eventName: "Mint",
     onLogs: (logs) => {
-      logs.forEach((log) => {
-        const args = log.args as {
-          sender: string;
-          to: string;
-          amount0: bigint;
-          amount1: bigint;
-          liquidity: bigint;
-        };
+      logs.forEach((rawLog) => {
+        const log = rawLog as unknown as EventLog<MintBurnEventArgs>;
+        const args = log.args;
+        if (!args) return;
         const token0Symbol = resolveSymbol(pool.token0);
         const token1Symbol = resolveSymbol(pool.token1);
         handleHistory({
@@ -93,7 +104,7 @@ export function useHistoryEvents(onlyMyWallet: boolean) {
           amountOut: formatUnits(args.amount1, tokenMap.get(pool.token1?.toLowerCase() || "")?.decimals || 18),
           status: "confirmed",
           timestamp: new Date().toLocaleTimeString(),
-          hash: log.transactionHash,
+          hash: log.transactionHash ?? undefined,
           wallet: args.to,
           source: "onchain",
           createdAt: Date.now()
@@ -106,14 +117,10 @@ export function useHistoryEvents(onlyMyWallet: boolean) {
     ...dexContracts.pool,
     eventName: "Burn",
     onLogs: (logs) => {
-      logs.forEach((log) => {
-        const args = log.args as {
-          sender: string;
-          to: string;
-          amount0: bigint;
-          amount1: bigint;
-          liquidity: bigint;
-        };
+      logs.forEach((rawLog) => {
+        const log = rawLog as unknown as EventLog<MintBurnEventArgs>;
+        const args = log.args;
+        if (!args) return;
         const token0Symbol = resolveSymbol(pool.token0);
         const token1Symbol = resolveSymbol(pool.token1);
         handleHistory({
@@ -125,7 +132,7 @@ export function useHistoryEvents(onlyMyWallet: boolean) {
           amountOut: formatUnits(args.amount1, tokenMap.get(pool.token1?.toLowerCase() || "")?.decimals || 18),
           status: "confirmed",
           timestamp: new Date().toLocaleTimeString(),
-          hash: log.transactionHash,
+          hash: log.transactionHash ?? undefined,
           wallet: args.to,
           source: "onchain",
           createdAt: Date.now()
