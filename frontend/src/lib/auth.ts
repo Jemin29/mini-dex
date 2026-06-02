@@ -1,4 +1,4 @@
-import type { NextAuthOptions, RequestInternal, Provider } from "next-auth/providers";
+import type { NextAuthOptions, RequestInternal } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import EmailProvider from "next-auth/providers/email";
@@ -63,7 +63,7 @@ const walletProvider = CredentialsProvider({
   }
 });
 
-const providers: Provider[] = [walletProvider];
+const providers: NextAuthOptions["providers"] = [walletProvider];
 
 if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   providers.push(
