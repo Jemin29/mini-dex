@@ -4,6 +4,11 @@
   "private": true,
   "license": "MIT",
   "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "lint": "npm --prefix frontend run lint",
+    "postinstall": "npm --prefix frontend install --legacy-peer-deps",
     "compile": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage",

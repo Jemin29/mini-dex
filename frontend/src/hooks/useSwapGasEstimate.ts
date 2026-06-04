@@ -24,7 +24,7 @@ export function useSwapGasEstimate(amountOutMin: string, decimalsIn: number, dec
         const router = new Contract(dexContracts.router.address, routerAbi, signer);
         const amountInParsed = parseUnits(amountIn, decimalsIn);
         const minParsed = parseUnits(amountOutMin, decimalsOut);
-        const estimated = await router.estimateGas.swapExactTokensForTokens(
+        const estimated = await router.swapExactTokensForTokens.estimateGas(
           tokenIn.address,
           tokenOut.address,
           amountInParsed,

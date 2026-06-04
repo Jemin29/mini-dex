@@ -2,59 +2,85 @@
 
 import { useMemo } from "react";
 import { useAccount, useReadContracts } from "wagmi";
-import { formatUnits } from "viem";
+import { formatUnits, type Abi } from "viem";
 import { dexContracts } from "@/lib/contracts";
 import type { Token } from "@/types/tokens";
 import { env } from "@/lib/env";
 
+type ContractCall = {
+  abi: Abi;
+  address: `0x${string}`;
+  functionName: string;
+  args: readonly unknown[];
+};
+
 export function useLiquidityBalances(tokenA?: Token, tokenB?: Token, lpToken?: string) {
   const { address } = useAccount();
 
-  const result = useReadContracts({
-    contracts: [
-      tokenA && {
-        ...dexContracts.erc20,
+  const contracts = useMemo(() => {
+    const calls: ContractCall[] = [];
+    const walletAddr = address as `0x${string}`;
+    const routerAddr = dexContracts.router.address;
+    const abi = dexContracts.erc20.abi as Abi;
+
+    if (tokenA) {
+      calls.push({
+        abi,
         address: tokenA.address as `0x${string}`,
         functionName: "balanceOf",
-        args: [address as `0x${string}`]
-      },
-      tokenB && {
-        ...dexContracts.erc20,
+        args: [walletAddr]
+      });
+    }
+    if (tokenB) {
+      calls.push({
+        abi,
         address: tokenB.address as `0x${string}`,
         functionName: "balanceOf",
-        args: [address as `0x${string}`]
-      },
-      tokenA && {
-        ...dexContracts.erc20,
+        args: [walletAddr]
+      });
+    }
+    if (tokenA) {
+      calls.push({
+        abi,
         address: tokenA.address as `0x${string}`,
         functionName: "allowance",
-        args: [address as `0x${string}`, dexContracts.router.address]
-      },
-      tokenB && {
-        ...dexContracts.erc20,
+        args: [walletAddr, routerAddr]
+      });
+    }
+    if (tokenB) {
+      calls.push({
+        abi,
         address: tokenB.address as `0x${string}`,
         functionName: "allowance",
-        args: [address as `0x${string}`, dexContracts.router.address]
-      },
-      lpToken && {
-        ...dexContracts.erc20,
+        args: [walletAddr, routerAddr]
+      });
+    }
+    if (lpToken) {
+      calls.push({
+        abi,
         address: lpToken as `0x${string}`,
         functionName: "balanceOf",
-        args: [address as `0x${string}`]
-      },
-      lpToken && {
-        ...dexContracts.erc20,
+        args: [walletAddr]
+      });
+      calls.push({
+        abi,
         address: lpToken as `0x${string}`,
         functionName: "allowance",
-        args: [address as `0x${string}`, dexContracts.router.address]
-      },
-      lpToken && {
-        ...dexContracts.erc20,
+        args: [walletAddr, routerAddr]
+      });
+      calls.push({
+        abi,
         address: lpToken as `0x${string}`,
         functionName: "totalSupply",
         args: []
-      }
-    ].filter(Boolean),
+      });
+    }
+
+    return calls;
+  }, [address, tokenA, tokenB, lpToken]);
+
+  const result = useReadContracts({
+    contracts,
     query: {
       enabled: Boolean(address && env.routerAddress && tokenA && tokenB),
       staleTime: 10_000,

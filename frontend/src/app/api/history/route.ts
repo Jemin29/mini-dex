@@ -59,11 +59,11 @@ export async function GET(request: Request) {
 
   let items = [...SAMPLE_HISTORY];
 
-  if (type && type !== "All") {
+  if (type && type !== ("All" as string)) {
     items = items.filter((item) => item.type === type);
   }
 
-  if (status && status !== "All") {
+  if (status && status !== ("All" as string)) {
     items = items.filter((item) => item.status === status);
   }
 
